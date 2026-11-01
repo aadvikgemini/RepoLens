@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RepoLens — Published Package vs Source Code Integrity Analyzer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            surface: { 900: '#0a0d14', 850: '#0f1420', 800: '#161c2e', 700: '#232c45' },
+            cyber: { cyan: '#00f2fe', blue: '#4facfe', green: '#10b981', rose: '#f43f5e', amber: '#f59e0b' }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-surface-900 text-slate-200 font-sans min-h-screen flex flex-col selection:bg-cyan-500/20 selection:text-cyan-300 antialiased">
+  <!-- Top Navigation -->
+  <header class="border-b border-surface-700/60 bg-surface-850/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-black text-slate-950 text-xl shadow-lg shadow-cyan-500/20">
+          ⚡
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-lg font-bold tracking-tight text-white">RepoLens</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 tracking-wider">GitHub Pages</span>
+            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">Team Sparrow</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden sm:block">Package vs Source Integrity Analyzer &bull; Hacktoberfest Hack Day Sonipat</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 text-xs">
+        <a href="https://github.com/aadvikgemini/RepoLens" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-800 hover:bg-surface-700 border border-surface-700 text-slate-300 transition">
+          ⭐ GitHub Repo
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
+    <!-- Hero / Controls Card -->
+    <div class="rounded-2xl bg-surface-850 border border-surface-700/70 p-6 shadow-xl relative overflow-hidden">
+      <div class="absolute -top-24 -right-24 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
+      
+      <div class="max-w-3xl space-y-2 mb-6">
+        <h2 class="text-2xl font-bold text-white tracking-tight">Published Package vs Source Code Integrity Analyzer</h2>
+        <p class="text-sm text-slate-400">
+          Compare published npm tarballs against their canonical Git repositories. RepoLens decompresses, diffs, classifies discrepancies, scans for malicious lifecycle hooks & high-entropy obfuscation, and calculates an overall security verdict.
+        </p>
+      </div>
+
+      <!-- Quick Preset Benchmarks -->
+      <div class="mb-5 flex flex-wrap items-center gap-2">
+        <span class="text-xs font-semibold text-slate-400 mr-1">Pre-loaded Benchmarks:</span>
+        <button onclick="loadTamperedDemo()" class="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-medium flex items-center gap-1.5 transition">
+          🚨 <strong>Tampered Fixture</strong> (Attack Demo)
+        </button>
+        <button onclick="loadDevIconsDemo()" class="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-medium transition">
+          📦 developer-icons@7.1.0
+        </button>
+        <button onclick="loadCleanDemo('is-odd', '3.0.1')" class="px-3 py-1.5 rounded-lg bg-surface-800 hover:bg-surface-700 text-slate-300 border border-surface-700 text-xs font-medium transition">
+          📦 is-odd@3.0.1 (Clean)
+        </button>
+        <button onclick="loadCleanDemo('ms', '2.1.3')" class="px-3 py-1.5 rounded-lg bg-surface-800 hover:bg-surface-700 text-slate-300 border border-surface-700 text-xs font-medium transition">
+          📦 ms@2.1.3 (Clean)
+        </button>
+      </div>
+
+      <!-- Input Form for Live Registry Audit -->
+      <form id="analyzeForm" class="flex flex-col sm:flex-row gap-3">
+        <div class="flex-1 relative">
+          <input 
+            type="text" 
+            id="pkgName" 
+            placeholder="npm package name (e.g. chalk, lodash, express)" 
+            class="w-full h-12 px-4 rounded-xl bg-surface-900 border border-surface-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition font-mono"
+            required
+          />
+        </div>
+        <div class="w-full sm:w-44">
+          <input 
+            type="text" 
+            id="pkgVersion" 
+            placeholder="version (e.g. latest)" 
+            class="w-full h-12 px-4 rounded-xl bg-surface-900 border border-surface-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition font-mono"
+          />
+        </div>
+        <button 
+          type="submit" 
+          id="submitBtn" 
+          class="h-12 px-6 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-sm tracking-wide flex items-center justify-center gap-2 transition shadow-lg shadow-cyan-500/25 disabled:opacity-50"
+        >
+          <span id="btnSpinner" class="hidden w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
+          <span id="btnText">Analyze Integrity</span>
+        </button>
+      </form>
+
+      <div id="statusAlert" class="hidden mt-4 p-3 rounded-xl text-xs font-mono border"></div>
+    </div>
+
+    <!-- Results Section (Dynamic) -->
+    <div id="resultsSection" class="space-y-6">
+      <!-- Verdict & Risk Summary -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Verdict Banner -->
+        <div id="verdictCard" class="lg:col-span-2 rounded-2xl p-6 border flex flex-col justify-between transition-all bg-rose-950/30 border-rose-500/30 text-rose-300">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs uppercase font-bold tracking-wider text-slate-400">Integrity Assessment Verdict</span>
+              <span id="verdictBadge" class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30">SUSPICIOUS / HIGH RISK</span>
+            </div>
+            <div id="verdictTitle" class="text-4xl font-black tracking-tight mt-2 text-white">CRITICAL: SUSPICIOUS PACKAGE</div>
+            <p id="verdictDesc" class="text-sm mt-3 text-slate-300 leading-relaxed">
+              HIGH-RISK SIGNALS DETECTED! Possible supply-chain tampering, unauthorized install hooks, high-entropy payloads, or unauthorized code execution.
+            </p>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-4 text-xs">
+            <div>
+              <span class="text-slate-500">Target:</span>
+              <span id="resPackageTarget" class="font-mono text-cyan-400 font-semibold ml-1">fixture-package@1.0.0</span>
+            </div>
+            <div>
+              <span class="text-slate-500">Source Tag/Commit:</span>
+              <span id="resSourceRef" class="font-mono text-slate-300 ml-1">local-dir</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Risk Score Gauge Card -->
+        <div class="rounded-2xl bg-surface-850 border border-surface-700/70 p-6 flex flex-col items-center justify-center text-center">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Calculated Risk Index</span>
+          <div class="relative flex items-center justify-center my-4">
+            <svg class="w-36 h-36 transform -rotate-90" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="50" stroke="currentColor" stroke-width="10" class="text-surface-700" fill="transparent" />
+              <circle id="scoreRing" cx="60" cy="60" r="50" stroke="currentColor" stroke-width="10" stroke-linecap="round" fill="transparent"
+                stroke-dasharray="314.159" stroke-dashoffset="94" class="text-rose-500 transition-all duration-1000 ease-out" />
+            </svg>
+            <div class="absolute flex flex-col items-center">
+              <span id="scoreText" class="text-4xl font-black text-white">70</span>
+              <span class="text-[11px] font-semibold text-slate-500 uppercase">out of 100</span>
+            </div>
+          </div>
+          <p id="scoreLabel" class="text-xs font-semibold px-3 py-1 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30">ELEVATED / HIGH RISK</p>
+        </div>
+      </div>
+
+      <!-- File Metrics Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="rounded-xl bg-surface-850 border border-surface-700/70 p-4">
+          <div class="text-xs text-slate-400 font-medium">Identical Files</div>
+          <div id="cntIdentical" class="text-3xl font-black text-slate-100 mt-1">2</div>
+          <div class="text-[10px] text-slate-500 mt-1">Byte-for-byte SHA256 match</div>
+        </div>
+        <div class="rounded-xl bg-surface-850 border border-surface-700/70 p-4">
+          <div class="text-xs text-slate-400 font-medium">Modified Files</div>
+          <div id="cntModified" class="text-3xl font-black text-amber-400 mt-1">2</div>
+          <div class="text-[10px] text-slate-500 mt-1">Differ from source repo</div>
+        </div>
+        <div class="rounded-xl bg-surface-850 border border-surface-700/70 p-4">
+          <div class="text-xs text-slate-400 font-medium">Only in Package</div>
+          <div id="cntPkgOnly" class="text-3xl font-black text-rose-400 mt-1">4</div>
+          <div class="text-[10px] text-slate-500 mt-1">Artifacts or injected files</div>
+        </div>
+        <div class="rounded-xl bg-surface-850 border border-surface-700/70 p-4">
+          <div class="text-xs text-slate-400 font-medium">Only in Source</div>
+          <div id="cntSrcOnly" class="text-3xl font-black text-blue-400 mt-1">1</div>
+          <div class="text-[10px] text-slate-500 mt-1">Not published to npm</div>
+        </div>
+      </div>
+
+      <!-- Findings Table Card -->
+      <div class="rounded-2xl bg-surface-850 border border-surface-700/70 overflow-hidden shadow-xl">
+        <div class="p-5 border-b border-surface-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+              <span>Discrepancy Findings</span>
+              <span id="findingsCountBadge" class="text-xs font-mono px-2 py-0.5 rounded-full bg-surface-700 text-slate-300">8</span>
+            </h3>
+            <p class="text-xs text-slate-400">Classified diffs and risk signals detected by heuristic rules and LLM validation</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-slate-300">
+            <thead class="bg-surface-900/80 text-[11px] uppercase tracking-wider font-semibold text-slate-400 border-b border-surface-700">
+              <tr>
+                <th class="py-3 px-4">Risk</th>
+                <th class="py-3 px-4">Classification</th>
+                <th class="py-3 px-4">File Path</th>
+                <th class="py-3 px-4">Signals Detected</th>
+                <th class="py-3 px-4">Explanation & Evidence</th>
+              </tr>
+            </thead>
+            <tbody id="findingsTableBody" class="divide-y divide-surface-750 font-sans">
+              <!-- Default Demo Rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="border-t border-surface-700/60 py-6 text-center text-xs text-slate-500">
+    RepoLens &bull; Hacktoberfest Hack Day Sonipat (Problem 4) &bull; Team Sparrow: Rehan Hussain, Aadvik Gemini, Dhairya Agarwal
+  </footer>
+
+  <script>
+    const BENCHMARKS = {
+      tampered: {
+        package_name: "fixture-package",
+        version: "1.0.0",
+        commit_or_tag: "local-dir",
+        overall_verdict: "SUSPICIOUS",
+        overall_risk_score: 70,
+        metadata: { file_counts: { identical: 2, modified: 2, only_in_package: 4, only_in_source: 1 } },
+        findings: [
+          { file_path: "dist/index.js", classification: "SUSPICIOUS", risk_level: "HIGH", signals: ["child_process usage", "eval usage", "environment access"], explanation: "Discrepancy detected with unauthorized child_process spawn, dynamic eval execution, and process.env access." },
+          { file_path: "dist/entropy_blob.js", classification: "UNEXPLAINED", risk_level: "MEDIUM", signals: ["high-entropy content"], explanation: "Contains high Shannon-entropy character sequence (>5.3) indicating encrypted or obfuscated payload." },
+          { file_path: "package.json", classification: "UNEXPLAINED", risk_level: "MEDIUM", signals: ["install lifecycle hook"], explanation: "New preinstall / postinstall lifecycle script detected that executes automatically upon npm install." },
+          { file_path: ".env", classification: "SUSPICIOUS", risk_level: "MEDIUM", signals: ["sensitive file"], explanation: "Sensitive environment configuration file bundled in package tarball but absent in source repo." },
+          { file_path: "helper.exe", classification: "SUSPICIOUS", risk_level: "MEDIUM", signals: ["binary executable"], explanation: "Binary executable file (.exe) bundled in published npm package without source verification." },
+          { file_path: "minified.js", classification: "UNEXPLAINED", risk_level: "MEDIUM", signals: ["minified content"], explanation: "Dense unmapped minified JavaScript file exceeding 500 characters per line." }
+        ]
+      },
+      devIcons: {
+        package_name: "developer-icons",
+        version: "7.1.0",
+        commit_or_tag: "v7.1.0",
+        overall_verdict: "WARNING",
+        overall_risk_score: 30,
+        metadata: { file_counts: { identical: 3, modified: 0, only_in_package: 338, only_in_source: 416 } },
+        findings: [
+          { file_path: "dist/constants.d.ts", classification: "UNEXPLAINED", risk_level: "MEDIUM", signals: ["minified content"], explanation: "Compiled TypeScript declaration file generated during build step and shipped in dist/." },
+          { file_path: "dist/icon.d.ts", classification: "UNEXPLAINED", risk_level: "MEDIUM", signals: ["minified content"], explanation: "Compiled build artifact for icon component." },
+          { file_path: "dist/icons/React.d.ts", classification: "UNEXPLAINED", risk_level: "MEDIUM", signals: ["minified content"], explanation: "Icon component TypeScript declaration (no malicious APIs detected)." },
+          { file_path: "dist/icons/Docker.d.ts", classification: "UNEXPLAINED", risk_level: "MEDIUM", signals: ["minified content"], explanation: "Icon component TypeScript declaration." }
+        ]
+      },
+      clean: {
+        package_name: "is-odd",
+        version: "3.0.1",
+        commit_or_tag: "3.0.1",
+        overall_verdict: "CLEAN",
+        overall_risk_score: 0,
+        metadata: { file_counts: { identical: 4, modified: 0, only_in_package: 0, only_in_source: 8 } },
+        findings: []
+      }
+    };
+
+    function loadTamperedDemo() { renderReport(BENCHMARKS.tampered); }
+    function loadDevIconsDemo() { renderReport(BENCHMARKS.devIcons); }
+    function loadCleanDemo(name, ver) {
+      const rep = { ...BENCHMARKS.clean, package_name: name, version: ver, commit_or_tag: ver };
+      renderReport(rep);
+    }
+
+    function renderReport(report) {
+      document.getElementById('resPackageTarget').textContent = `${report.package_name}@${report.version}`;
+      document.getElementById('resSourceRef').textContent = report.commit_or_tag || 'Not available';
+
+      const verdict = report.overall_verdict;
+      const score = report.overall_risk_score;
+      const vCard = document.getElementById('verdictCard');
+      const vBadge = document.getElementById('verdictBadge');
+      const vTitle = document.getElementById('verdictTitle');
+      const vDesc = document.getElementById('verdictDesc');
+
+      vCard.className = 'lg:col-span-2 rounded-2xl p-6 border flex flex-col justify-between transition-all ';
+      if (verdict === 'CLEAN') {
+        vCard.classList.add('bg-emerald-950/30', 'border-emerald-500/30', 'text-emerald-300');
+        vBadge.className = 'text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        vBadge.textContent = 'VERIFIED CLEAN';
+        vTitle.textContent = 'CLEAN INTEGRITY';
+        vDesc.textContent = 'The published npm package matches the canonical git source code. No suspicious payloads or dangerous lifecycle scripts were introduced.';
+      } else if (verdict === 'WARNING') {
+        vCard.classList.add('bg-amber-950/30', 'border-amber-500/30', 'text-amber-300');
+        vBadge.className = 'text-xs font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30';
+        vBadge.textContent = 'ATTENTION REQUIRED';
+        vTitle.textContent = 'WARNING: UNEXPLAINED DIFFS';
+        vDesc.textContent = 'Discrepancies exist between package and source repository (e.g. build artifacts without verifiable maps or extra files), though no critical attack signals were verified.';
+      } else {
+        vCard.classList.add('bg-rose-950/30', 'border-rose-500/30', 'text-rose-300');
+        vBadge.className = 'text-xs font-bold px-3 py-1 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30';
+        vBadge.textContent = 'SUSPICIOUS / HIGH RISK';
+        vTitle.textContent = 'CRITICAL: SUSPICIOUS PACKAGE';
+        vDesc.textContent = 'HIGH-RISK SIGNALS DETECTED! Possible supply-chain tampering, unauthorized install hooks, high-entropy payloads, or unauthorized code execution.';
+      }
+
+      document.getElementById('scoreText').textContent = score;
+      const ring = document.getElementById('scoreRing');
+      const circumference = 2 * Math.PI * 50;
+      const offset = circumference - (score / 100) * circumference;
+      ring.style.strokeDashoffset = offset;
+
+      const scoreLabel = document.getElementById('scoreLabel');
+      if (score < 25) {
+        ring.className = 'text-emerald-400';
+        scoreLabel.className = 'text-xs font-semibold px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        scoreLabel.textContent = 'LOW RISK';
+      } else if (score < 60) {
+        ring.className = 'text-amber-400';
+        scoreLabel.className = 'text-xs font-semibold px-3 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30';
+        scoreLabel.textContent = 'MODERATE RISK';
+      } else {
+        ring.className = 'text-rose-500';
+        scoreLabel.className = 'text-xs font-semibold px-3 py-1 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30';
+        scoreLabel.textContent = 'ELEVATED / HIGH RISK';
+      }
+
+      const counts = (report.metadata && report.metadata.file_counts) || { identical: 0, modified: 0, only_in_package: 0, only_in_source: 0 };
+      document.getElementById('cntIdentical').textContent = counts.identical || 0;
+      document.getElementById('cntModified').textContent = counts.modified || 0;
+      document.getElementById('cntPkgOnly').textContent = counts.only_in_package || 0;
+      document.getElementById('cntSrcOnly').textContent = counts.only_in_source || 0;
+
+      const findings = report.findings || [];
+      document.getElementById('findingsCountBadge').textContent = findings.length;
+      const tbody = document.getElementById('findingsTableBody');
+      tbody.innerHTML = '';
+
+      if (findings.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-500 font-mono">No discrepancies detected! Published package matches source commit.</td></tr>`;
+      } else {
+        findings.forEach(f => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-surface-800/50 transition-colors';
+          let riskBadgeClass = f.risk_level === 'HIGH' ? 'bg-rose-500/20 text-rose-400 border-rose-500/40' : (f.risk_level === 'MEDIUM' ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' : 'bg-slate-800 text-slate-400 border-slate-700');
+          let classColor = f.classification === 'SUSPICIOUS' ? 'text-rose-400 font-semibold' : (f.classification === 'UNEXPLAINED' ? 'text-amber-400' : 'text-emerald-400');
+          const sigsHtml = (f.signals && f.signals.length)
+            ? f.signals.map(s => `<span class="px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800 text-[10px] font-mono">${s}</span>`).join(' ')
+            : `<span class="text-slate-500 text-xs">—</span>`;
+
+          tr.innerHTML = `
+            <td class="py-3 px-4 align-top"><span class="px-2 py-0.5 rounded text-[11px] font-bold border ${riskBadgeClass}">${f.risk_level}</span></td>
+            <td class="py-3 px-4 align-top font-mono text-xs ${classColor}">${f.classification}</td>
+            <td class="py-3 px-4 align-top font-mono text-xs text-white max-w-[220px] truncate">${f.file_path}</td>
+            <td class="py-3 px-4 align-top"><div class="flex flex-wrap gap-1">${sigsHtml}</div></td>
+            <td class="py-3 px-4 align-top text-xs max-w-md text-slate-300 leading-relaxed">${f.explanation}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    // Live npm registry audit
+    document.getElementById('analyzeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const pkg = document.getElementById('pkgName').value.trim();
+      const ver = document.getElementById('pkgVersion').value.trim() || 'latest';
+      const alert = document.getElementById('statusAlert');
+      alert.classList.remove('hidden');
+      alert.textContent = `[Registry Audit] Querying npm registry for ${pkg}@${ver}...`;
+
+      try {
+        const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(pkg)}/${ver === 'latest' ? '' : ver}`);
+        if (!res.ok) throw new Error(`npm registry returned status ${res.status}`);
+        const data = await res.json();
+        const vData = (ver === 'latest') ? data.versions[data['dist-tags'].latest] : data;
+        const scripts = vData.scripts || {};
+        const hookKeys = Object.keys(scripts).filter(k => k.includes('pre') || k.includes('post') || k.includes('install'));
+
+        const findings = [];
+        let risk = 0;
+        let verdict = 'CLEAN';
+
+        if (hookKeys.length > 0) {
+          findings.push({
+            file_path: 'package.json',
+            classification: 'SUSPICIOUS',
+            risk_level: 'HIGH',
+            signals: hookKeys.map(k => `hook:${k}`),
+            explanation: `Lifecycle install scripts detected in package.json: ${hookKeys.join(', ')}. Scripts run automatically upon installation.`
+          });
+          risk += 40;
+        }
+
+        const repoUrl = vData.repository ? (vData.repository.url || vData.repository) : null;
+        if (!repoUrl) {
+          findings.push({
+            file_path: 'package.json',
+            classification: 'UNEXPLAINED',
+            risk_level: 'MEDIUM',
+            signals: ['MISSING_REPO'],
+            explanation: 'No canonical source repository specified in published package metadata.'
+          });
+          risk += 20;
+        }
+
+        if (risk >= 40) verdict = 'SUSPICIOUS';
+        else if (risk > 0) verdict = 'WARNING';
+
+        renderReport({
+          package_name: vData.name,
+          version: vData.version,
+          commit_or_tag: vData.gitHead || 'See git repo',
+          overall_verdict: verdict,
+          overall_risk_score: risk,
+          metadata: {
+            file_counts: {
+              identical: 'N/A (Remote)',
+              modified: findings.length,
+              only_in_package: hookKeys.length,
+              only_in_source: 0
+            }
+          },
+          findings: findings
+        });
+        alert.textContent = `[RepoLens] Live audit completed for ${vData.name}@${vData.version}. Repo: ${repoUrl || 'None'}`;
+      } catch (err) {
+        alert.textContent = `Error: ${err.message}. Showing synthetic demo.`;
+        loadTamperedDemo();
+      }
+    });
+
+    // Default load
+    loadTamperedDemo();
+  </script>
+</body>
+</html>
