@@ -62,5 +62,22 @@ def watch() -> None:
     typer.echo("watch: not implemented yet")
 
 
+@app.command()
+def web(
+    port: int = typer.Option(8000, "--port", "-p", help="Port for localhost server"),
+) -> None:
+    """Start the interactive RepoLens localhost web dashboard."""
+    import socketserver
+    from web_server import RepoLensHandler
+    socketserver.TCPServer.allow_reuse_address = True
+    server = socketserver.TCPServer(("0.0.0.0", port), RepoLensHandler)
+    typer.echo(f"[repolens] Web dashboard running at http://localhost:{port}")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        typer.echo("\n[repolens] Shutting down web server...")
+        server.server_close()
+
+
 if __name__ == "__main__":
     app()
